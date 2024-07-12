@@ -240,7 +240,7 @@ def build_full_map_images(cache_dir, xtea_file):
             '--cachedir', cache_dir, 
             '--xteapath', xtea_file, 
             '--outputdir', GENERATED_FULL_IMAGES,
-            '--withObjectData', 'true'
+            '--withObjectData', 'false'
             
         ], 
         check=True
