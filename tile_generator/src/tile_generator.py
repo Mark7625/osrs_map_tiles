@@ -43,8 +43,8 @@ MAX_Z = 3
 
 REPO_DIR = '/repo' # Name of the directory mounted on the local machine
 ROOT_CACHE_DIR = os.path.join(REPO_DIR, 'cache/')
-GENERATED_FULL_IMAGES = os.path.join(REPO_DIR, 'generated_images/normal/')
-TILE_DIR = os.path.join(REPO_DIR, 'normal/')
+GENERATED_FULL_IMAGES = os.path.join(REPO_DIR, 'generated_images/')
+TILE_DIR = REPO_DIR
 
 image_prefix = "full_image_"
 
@@ -244,7 +244,7 @@ def build_full_map_images(cache_dir, xtea_file):
     )
 
     for plane in range(MIN_Z, MAX_Z + 1):
-        new_map_image_path = os.path.join(GENERATED_FULL_IMAGES, f"normal-img-{plane}.png")
+        new_map_image_path = os.path.join(GENERATED_FULL_IMAGES, f"img-{plane}.png")
         renamed_new_map_image_path = os.path.join(GENERATED_FULL_IMAGES, f"new-map-image-{plane}.png")
         os.replace(new_map_image_path, renamed_new_map_image_path)
 
