@@ -74,21 +74,23 @@ def main():
 
  
     for type_name in TYPE_NAMES:
+        type_name_clean = type_name.rstrip('/')
+        
         LOG.info(f"Processing type: {type_name}")
         
         GENERATED_FULL_IMAGES = os.path.join(GENERATED_FULL_IMAGES_BASE, type_name)
         TILE_DIR = os.path.join(REPO_DIR, type_name)
         
-        build_full_map_images(cache_dir, xtea_file, type_name)
+        build_full_map_images(cache_dir, xtea_file, type_name_clean)
 
         LOG.info("Generating tiles")
         for plane in range(MAX_Z + 1):
-            generate_tiles_for_plane(plane, type_name)
+            generate_tiles_for_plane(plane, type_name_clean)
 
         for plane in range(MIN_Z, MAX_Z + 1):
-            previous_map_image_name = os.path.join(GENERATED_FULL_IMAGES, f"{type_name}previous-map-image-{plane}.png")
-            current_map_image_name = os.path.join(GENERATED_FULL_IMAGES, f"{type_name}current-map-image-{plane}.png")
-            generated_file_name = os.path.join(GENERATED_FULL_IMAGES, f"{type_name}new-map-image-{plane}.png")
+            previous_map_image_name = os.path.join(GENERATED_FULL_IMAGES, f"previous-map-image-{plane}.png")
+            current_map_image_name = os.path.join(GENERATED_FULL_IMAGES, f"current-map-image-{plane}.png")
+            generated_file_name = os.path.join(GENERATED_FULL_IMAGES, f"new-map-image-{plane}.png")
 
             os.replace(current_map_image_name, previous_map_image_name)
             os.replace(generated_file_name, current_map_image_name)
