@@ -74,9 +74,10 @@ def main():
     for type_name in TYPE_NAMES:
         GENERATED_FULL_IMAGES = os.path.join(GENERATED_FULL_IMAGES_BASE, type_name)
         TILE_DIR = os.path.join(REPO_DIR, type_name)
+        
         type_name_clean = type_name.rstrip('/')
         LOG.info(f"Building map base images: {type_name_clean}")
-        build_full_map_images(cache_dir, xtea_file)
+        build_full_map_images(cache_dir, xtea_file,type_name)
 
         LOG.info(f"Generating tiles: {type_name_clean}")
         for plane in range(MAX_Z + 1):
