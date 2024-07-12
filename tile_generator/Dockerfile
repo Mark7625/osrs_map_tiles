@@ -34,4 +34,4 @@ RUN mvn -f /runelite/pom.xml install -DskipTests
 # Add required files
 ADD src src
 
-CMD [ "conda", "run", "--no-capture-output", "-n", "vips", "python", "./src/tile_generator_normal.py" ]
+CMD [ "conda", "run", "--no-capture-output", "-n", "vips", "python", "./src/tile_generator.py" ]

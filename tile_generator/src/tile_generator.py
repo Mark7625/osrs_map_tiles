@@ -42,11 +42,11 @@ MIN_Z = 0
 MAX_Z = 3
 
 REPO_DIR = '/repo' # Name of the directory mounted on the local machine
-TYPE_NAME = 'normal/'
+TYPE_NAMES = ["normal/", "objects/"]
 ROOT_CACHE_DIR = os.path.join(REPO_DIR, 'cache/')
 GENERATED_FULL_IMAGES_BASE = os.path.join(REPO_DIR, 'generated_images/')
-GENERATED_FULL_IMAGES = os.path.join(GENERATED_FULL_IMAGES_BASE, TYPE_NAME)
-TILE_DIR = os.path.join(REPO_DIR, TYPE_NAME)
+GENERATED_FULL_IMAGES = os.path.join(GENERATED_FULL_IMAGES_BASE, 'dunno')
+TILE_DIR = os.path.join(REPO_DIR, 'dunno')
 
 image_prefix = "full_image_"
 
@@ -72,20 +72,26 @@ def main():
     LOG.info("Downloading cache & XTEAs")
     [cache_dir, xtea_file] = download_cache_with_xteas()
 
-    LOG.info("Building map base images")
-    build_full_map_images(cache_dir, xtea_file)
+ 
+    for type_name in TYPE_NAMES:
+        LOG.info(f"Processing type: {type_name}")
+        
+        GENERATED_FULL_IMAGES = os.path.join(GENERATED_FULL_IMAGES_BASE, type_name)
+        TILE_DIR = os.path.join(REPO_DIR, type_name)
+        
+        build_full_map_images(cache_dir, xtea_file, type_name)
 
-    LOG.info("Generating tiles")
-    for plane in range(MAX_Z + 1):
-        generate_tiles_for_plane(plane)
+        LOG.info("Generating tiles")
+        for plane in range(MAX_Z + 1):
+            generate_tiles_for_plane(plane, type_name)
 
-    for plane in range(MIN_Z, MAX_Z + 1):
-        previous_map_image_name = os.path.join(GENERATED_FULL_IMAGES, f"previous-map-image-{plane}.png")
-        current_map_image_name = os.path.join(GENERATED_FULL_IMAGES, f"current-map-image-{plane}.png")
-        generated_file_name = os.path.join(GENERATED_FULL_IMAGES, f"new-map-image-{plane}.png")
+        for plane in range(MIN_Z, MAX_Z + 1):
+            previous_map_image_name = os.path.join(GENERATED_FULL_IMAGES, f"{type_name}previous-map-image-{plane}.png")
+            current_map_image_name = os.path.join(GENERATED_FULL_IMAGES, f"{type_name}current-map-image-{plane}.png")
+            generated_file_name = os.path.join(GENERATED_FULL_IMAGES, f"{type_name}new-map-image-{plane}.png")
 
-        os.replace(current_map_image_name, previous_map_image_name)
-        os.replace(generated_file_name, current_map_image_name)
+            os.replace(current_map_image_name, previous_map_image_name)
+            os.replace(generated_file_name, current_map_image_name)
        
 
 def download_cache_with_xteas():
@@ -222,10 +228,11 @@ def download_and_extract_cache(cache_zip_url, output_dir):
     os.remove(cache_zip)
 
 
-def build_full_map_images(cache_dir, xtea_file):
+def build_full_map_images(cache_dir, xtea_file,type_name):
     """
         Runs Runelite's MapImageDumper Java program to generate full OSRS map images
     """
+    LOG.info(f"Building map base images for {type_name}")
     os.chdir('/runelite/cache')
 
     jar_file = glob.glob("target/*jar-with-dependencies.jar")[0]
@@ -240,19 +247,19 @@ def build_full_map_images(cache_dir, xtea_file):
             '--cachedir', cache_dir, 
             '--xteapath', xtea_file, 
             '--outputdir', GENERATED_FULL_IMAGES,
-            '--withObjectData', 'false'
+            '--withObjectData', 'true'
             
         ], 
         check=True
     )
 
     for plane in range(MIN_Z, MAX_Z + 1):
-        new_map_image_path = os.path.join(GENERATED_FULL_IMAGES, f"img-{plane}.png")
+        new_map_image_path = os.path.join(GENERATED_FULL_IMAGES, f"${type_name}-img-{plane}.png")
         renamed_new_map_image_path = os.path.join(GENERATED_FULL_IMAGES, f"new-map-image-{plane}.png")
         os.replace(new_map_image_path, renamed_new_map_image_path)
 
 
-def generate_tiles_for_plane(plane):
+def generate_tiles_for_plane(plane,type_name):
     """
         Generates OSRS map tiles for a given Z plane.
         
@@ -272,7 +279,7 @@ def generate_tiles_for_plane(plane):
     """
     log_prefix = f"[Plane: {plane}]:"
 
-    LOG.info(f"{log_prefix} Generating plane {plane}")
+    LOG.info(f"Generating tiles for plane {plane} and type {type_name}")
     LOG.info(f"{log_prefix} Loading images into memory")
 
     old_image_location = os.path.join(GENERATED_FULL_IMAGES, f"current-map-image-{plane}.png")
