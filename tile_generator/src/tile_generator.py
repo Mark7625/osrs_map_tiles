@@ -77,11 +77,11 @@ def main():
         
         type_name_clean = type_name.rstrip('/')
         LOG.info(f"Building map base images: {type_name_clean}")
-        build_full_map_images(cache_dir, xtea_file,type_name)
+        build_full_map_images(cache_dir, xtea_file,type_name_clean)
 
         LOG.info(f"Generating tiles: {type_name_clean}")
         for plane in range(MAX_Z + 1):
-            generate_tiles_for_plane(plane)
+            generate_tiles_for_plane(plane,type_name_clean)
 
         for plane in range(MIN_Z, MAX_Z + 1):
             previous_map_image_name = os.path.join(GENERATED_FULL_IMAGES, f"previous-map-image-{plane}.png")
