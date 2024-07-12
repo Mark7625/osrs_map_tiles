@@ -13,7 +13,6 @@ import subprocess
 import zipfile
 from datetime import datetime
 from enum import Enum
-from multiprocessing import Pool
 from pathlib import Path
 
 from contextlib import contextmanager
@@ -41,11 +40,10 @@ MAX_ZOOM = 11
 MIN_Z = 0
 MAX_Z = 3
 
-REPO_DIR = '/repo' # Name of the directory mounted on the local machine
+REPO_DIR = '/repo'  # Name of the directory mounted on the local machine
 TYPE_NAMES = ["normal/", "objects/"]
 ROOT_CACHE_DIR = os.path.join(REPO_DIR, 'cache/')
 GENERATED_FULL_IMAGES_BASE = os.path.join(REPO_DIR, 'generated_images/')
-GENERATED_FULL_IMAGES = os.path.join(GENERATED_FULL_IMAGES_BASE, 'dunno')
 TILE_DIR = os.path.join(REPO_DIR, 'dunno')
 
 image_prefix = "full_image_"
@@ -61,37 +59,39 @@ DEFAULT_TILE_IMAGE = (
     .draw_rect([0, 0, 0, 0], 0, 0, TILE_SIZE_PX, TILE_SIZE_PX, fill=True)
 )
 
+
 class Side(Enum):
     TOP_LEFT = 1
     TOP_RIGHT = 2
     BOTTOM_LEFT = 3
     BOTTOM_RIGHT = 4
 
+
 def main():
     LOG.info("Downloading cache & XTEAs")
     [cache_dir, xtea_file] = download_cache_with_xteas()
 
     for type_name in TYPE_NAMES:
-        GENERATED_FULL_IMAGES = os.path.join(GENERATED_FULL_IMAGES_BASE, type_name)
-        TILE_DIR = os.path.join(REPO_DIR, type_name)
-        
+        generated_full_images = os.path.join(GENERATED_FULL_IMAGES_BASE, type_name)
+        tile_dir = os.path.join(REPO_DIR, type_name)
+
         type_name_clean = type_name.rstrip('/')
         LOG.info(f"Building map base images: {type_name_clean}")
-        build_full_map_images(cache_dir, xtea_file,type_name_clean)
+        build_full_map_images(cache_dir, xtea_file, type_name_clean, generated_full_images)
 
         LOG.info(f"Generating tiles: {type_name_clean}")
         for plane in range(MAX_Z + 1):
-            generate_tiles_for_plane(plane,type_name_clean)
+            generate_tiles_for_plane(plane, type_name_clean, generated_full_images, tile_dir)
 
         for plane in range(MIN_Z, MAX_Z + 1):
-            previous_map_image_name = os.path.join(GENERATED_FULL_IMAGES, f"previous-map-image-{plane}.png")
-            current_map_image_name = os.path.join(GENERATED_FULL_IMAGES, f"current-map-image-{plane}.png")
-            generated_file_name = os.path.join(GENERATED_FULL_IMAGES, f"new-map-image-{plane}.png")
+            previous_map_image_name = os.path.join(generated_full_images, f"previous-map-image-{plane}.png")
+            current_map_image_name = os.path.join(generated_full_images, f"current-map-image-{plane}.png")
+            generated_file_name = os.path.join(generated_full_images, f"new-map-image-{plane}.png")
 
             os.replace(current_map_image_name, previous_map_image_name)
             os.replace(generated_file_name, current_map_image_name)
 
-      
+
 def download_cache_with_xteas():
     """
         Downloads latest cache and XTEAs from specified URL.
@@ -103,7 +103,7 @@ def download_cache_with_xteas():
     LOG.info(f"Cache version: {latest_cache_version['links']['base']}")
     LOG.info(f"Cache upload date: {latest_cache_version['timestamp']}")
     LOG.info(f"Cache build: {latest_cache_version['build(s)']}")
-    
+
     cache_dir = os.path.join(ROOT_CACHE_DIR, latest_cache_version['timestamp'].strftime("%Y-%m-%d_%H_%M_%S") + "/")
     xtea_file = os.path.join(cache_dir, "xteas.json")
 
@@ -124,7 +124,7 @@ def fetch_latest_osrs_cache_version():
     cache_versions = fetch_osrs_cache_versions()
     latest_cache_version = max(cache_versions, key=lambda cache_version: cache_version["timestamp"])
     return latest_cache_version
-    
+
 
 def fetch_osrs_cache_versions():
     """
@@ -139,7 +139,7 @@ def fetch_osrs_cache_versions():
 
     header = cache_table.find("thead")
     header_cols = header.find_all('th')
-    header_texts = [ col.text.strip().lower() for col in header_cols ]
+    header_texts = [col.text.strip().lower() for col in header_cols]
 
     oldschool_rows = []
     for row in rows:
@@ -157,17 +157,17 @@ def fetch_osrs_cache_versions():
             if not timestamp_str:
                 continue
 
-            timestamp = datetime.strptime(timestamp_str,"%Y-%m-%d%H:%M:%S")
+            timestamp = datetime.strptime(timestamp_str, "%Y-%m-%d%H:%M:%S")
             mapped_row["timestamp"] = timestamp
 
             links_col = mapped_row["links"]
 
-            cache_link = links_col.find('a', { 'href': re.compile(r'\/caches\/runescape\/(\d+)\/disk.zip') }).get('href')
+            cache_link = links_col.find('a', {'href': re.compile(r'\/caches\/runescape\/(\d+)\/disk.zip')}).get('href')
 
             if not cache_link:
                 raise ValueError("Failed to extract cache version from HTML")
 
-            cache_idx_num = re.match(r'\/caches\/runescape\/(\d+)\/disk.zip', cache_link).group(1) 
+            cache_idx_num = re.match(r'\/caches\/runescape\/(\d+)\/disk.zip', cache_link).group(1)
 
             mapped_row["links"] = {
                 "base": f"{CACHES_BASE_URL}/caches/runescape/{cache_idx_num}",
@@ -176,7 +176,8 @@ def fetch_osrs_cache_versions():
             }
 
             if mapped_row["build(s)"]:
-                mapped_row["build(s)"] = [build.replace(" ", "") for build in mapped_row["build(s)"].text.strip().split("\n")]
+                mapped_row["build(s)"] = [build.replace(" ", "") for build in
+                                          mapped_row["build(s)"].text.strip().split("\n")]
 
             oldschool_rows.append(mapped_row)
 
@@ -192,10 +193,10 @@ def download_xteas(xtea_url, output_file):
     runelite_xteas = map_openrs2_xteas_to_runelite_format(xtea_file_json)
 
     with open(output_file, 'w') as f:
-        json.dump(runelite_xteas, f,  indent=4)
-    
+        json.dump(runelite_xteas, f, indent=4)
 
-def map_openrs2_xteas_to_runelite_format(xteas): 
+
+def map_openrs2_xteas_to_runelite_format(xteas):
     return [
         {
             "region": region["mapsquare"],
@@ -215,7 +216,7 @@ def download_and_extract_cache(cache_zip_url, output_dir):
     with zipfile.ZipFile(cache_zip, "r") as zip_file:
         for name in zip_file.namelist():
             basename = os.path.basename(name)
-            
+
             if not basename:
                 continue
 
@@ -226,7 +227,7 @@ def download_and_extract_cache(cache_zip_url, output_dir):
     os.remove(cache_zip)
 
 
-def build_full_map_images(cache_dir, xtea_file, type_name_clean):
+def build_full_map_images(cache_dir, xtea_file, type_name_clean, generated_full_images):
     """
     Runs Runelite's MapImageDumper Java program to generate full OSRS map images.
 
@@ -243,16 +244,16 @@ def build_full_map_images(cache_dir, xtea_file, type_name_clean):
 
     try:
         jar_file = glob.glob("target/*jar-with-dependencies.jar")[0]
-        
+
         command = [
-            'java', 
-            '-Xmx8g', 
-            '-cp', 
+            'java',
+            '-Xmx8g',
+            '-cp',
             jar_file,
-            'net.runelite.cache.MapImageDumper', 
-            '--cachedir', cache_dir, 
-            '--xteapath', xtea_file, 
-            '--outputdir', GENERATED_FULL_IMAGES
+            'net.runelite.cache.MapImageDumper',
+            '--cachedir', cache_dir,
+            '--xteapath', xtea_file,
+            '--outputdir', generated_full_images
         ]
 
         if type_name_clean == 'objects':
@@ -263,15 +264,15 @@ def build_full_map_images(cache_dir, xtea_file, type_name_clean):
         subprocess.run(command, check=True)
 
         for plane in range(MIN_Z, MAX_Z + 1):
-            new_map_image_path = os.path.join(GENERATED_FULL_IMAGES, f"{type_name_clean}-img-{plane}.png")
-            renamed_new_map_image_path = os.path.join(GENERATED_FULL_IMAGES, f"new-map-image-{plane}.png")
+            new_map_image_path = os.path.join(generated_full_images, f"{type_name_clean}-img-{plane}.png")
+            renamed_new_map_image_path = os.path.join(generated_full_images, f"new-map-image-{plane}.png")
             os.replace(new_map_image_path, renamed_new_map_image_path)
 
     except Exception as e:
         LOG.error(f"An error occurred: {e}")
 
 
-def generate_tiles_for_plane(plane,type_name_clean):
+def generate_tiles_for_plane(plane, type_name_clean, generated_full_images, tile_dir):
     """
         Generates OSRS map tiles for a given Z plane.
         
@@ -294,8 +295,8 @@ def generate_tiles_for_plane(plane,type_name_clean):
     LOG.info(f"Generating tiles for plane {plane} and type {type_name_clean}")
     LOG.info(f"{log_prefix} Loading images into memory")
 
-    old_image_location = os.path.join(GENERATED_FULL_IMAGES, f"current-map-image-{plane}.png")
-    new_image_location = os.path.join(GENERATED_FULL_IMAGES, f"new-map-image-{plane}.png")
+    old_image_location = os.path.join(generated_full_images, f"current-map-image-{plane}.png")
+    new_image_location = os.path.join(generated_full_images, f"new-map-image-{plane}.png")
 
     old_image = pyvips.Image.new_from_file(old_image_location)
     new_image = pyvips.Image.new_from_file(new_image_location)
@@ -309,18 +310,19 @@ def generate_tiles_for_plane(plane,type_name_clean):
     changed_tiles = get_changed_tiles(old_image, new_image, plane, starting_zoom)
 
     LOG.info(f"{log_prefix} Storing diff image")
-    output_tile_diff_image(changed_tiles, new_image_location,  str(Path(GENERATED_FULL_IMAGES, f"diff-map-image-{plane}.png")))
+    output_tile_diff_image(changed_tiles, new_image_location,
+                           str(Path(generated_full_images, f"diff-map-image-{plane}.png")))
 
     LOG.info(f"{log_prefix} Found {len(changed_tiles)} changed tiles at zoom level {starting_zoom}")
 
     LOG.info(f"{log_prefix} Saving changed tiles at zoom level {starting_zoom}")
     for tile in changed_tiles:
-        save_tile(tile["image"], plane, starting_zoom, tile["x"], tile["y"])
+        save_tile(tile["image"], plane, starting_zoom, tile["x"], tile["y"], tile_dir)
 
     next_changed_tiles = changed_tiles
     for zoom in range(starting_zoom + 1, MAX_ZOOM + 1):
-        LOG.info(f"{log_prefix} Splitting changed tiles from zoom level {zoom-1} to zoom level {zoom}")
-        next_changed_tiles = split_tiles_to_new_zoom(next_changed_tiles, plane, zoom)
+        LOG.info(f"{log_prefix} Splitting changed tiles from zoom level {zoom - 1} to zoom level {zoom}")
+        next_changed_tiles = split_tiles_to_new_zoom(next_changed_tiles, plane, zoom, tile_dir)
         LOG.info(f"{log_prefix} Done")
 
     for zoom in reversed(range(MIN_ZOOM + 1, starting_zoom + 1)):
@@ -386,12 +388,12 @@ def has_tile_changed(plane, zoom, tile_x, tile_y, old_image, new_image):
     new_image_buff = new_image_tile.write_to_memory()
 
     old_image_np = np.ndarray(buffer=old_image_buff,
-                            dtype=np.uint8,
-                            shape=[old_image_tile.height, old_image_tile.width, old_image_tile.bands])
+                              dtype=np.uint8,
+                              shape=[old_image_tile.height, old_image_tile.width, old_image_tile.bands])
 
     new_image_np = np.ndarray(buffer=new_image_buff,
-                            dtype=np.uint8,
-                            shape=[new_image_tile.height, new_image_tile.width, new_image_tile.bands])
+                              dtype=np.uint8,
+                              shape=[new_image_tile.height, new_image_tile.width, new_image_tile.bands])
 
     ssim = structural_similarity(old_image_np, new_image_np, multichannel=True)
 
@@ -400,7 +402,7 @@ def has_tile_changed(plane, zoom, tile_x, tile_y, old_image, new_image):
     return ((tile_x, tile_y), new_image_tile, has_changed)
 
 
-def split_tiles_to_new_zoom(changed_tiles, plane, new_zoom):
+def split_tiles_to_new_zoom(changed_tiles, plane, new_zoom, tile_dir):
     new_changed_tiles = []
 
     with thread_pool_executor() as executor:
@@ -412,7 +414,8 @@ def split_tiles_to_new_zoom(changed_tiles, plane, new_zoom):
                     split_tile_to_new_zoom,
                     changed_tile=changed_tile,
                     plane=plane,
-                    new_zoom=new_zoom
+                    new_zoom=new_zoom,
+                    tile_dir=tile_dir
                 )
             )
 
@@ -422,7 +425,7 @@ def split_tiles_to_new_zoom(changed_tiles, plane, new_zoom):
     return new_changed_tiles
 
 
-def split_tile_to_new_zoom(changed_tile, plane, new_zoom):
+def split_tile_to_new_zoom(changed_tile, plane, new_zoom, tile_dir):
     original_x = changed_tile["x"]
     original_y = changed_tile["y"]
 
@@ -434,16 +437,16 @@ def split_tile_to_new_zoom(changed_tile, plane, new_zoom):
     new_y = original_y * 2
 
     tile_image_0 = tile_image_resized.crop(0, TILE_SIZE_PX, TILE_SIZE_PX, TILE_SIZE_PX)
-    save_tile(tile_image_0, plane, new_zoom, new_x, new_y)
+    save_tile(tile_image_0, plane, new_zoom, new_x, new_y, tile_dir)
 
     tile_image_1 = tile_image_resized.crop(TILE_SIZE_PX, TILE_SIZE_PX, TILE_SIZE_PX, TILE_SIZE_PX)
-    save_tile(tile_image_1, plane, new_zoom, new_x + 1, new_y)
+    save_tile(tile_image_1, plane, new_zoom, new_x + 1, new_y, tile_dir)
 
     tile_image_2 = tile_image_resized.crop(0, 0, TILE_SIZE_PX, TILE_SIZE_PX)
-    save_tile(tile_image_2, plane, new_zoom, new_x, new_y + 1)
+    save_tile(tile_image_2, plane, new_zoom, new_x, new_y + 1, tile_dir)
 
     tile_image_3 = tile_image_resized.crop(TILE_SIZE_PX, 0, TILE_SIZE_PX, TILE_SIZE_PX)
-    save_tile(tile_image_3, plane, new_zoom, new_x + 1, new_y + 1)
+    save_tile(tile_image_3, plane, new_zoom, new_x + 1, new_y + 1, tile_dir)
 
     # New tiles at new zoom
     return [
@@ -493,7 +496,7 @@ def join_tiles_to_new_zoom(changed_tiles, plane, current_zoom, new_zoom):
     return new_changed_tiles
 
 
-def join_changed_tile_to_new_zoom(changed_tile, plane, current_zoom, new_zoom):
+def join_changed_tile_to_new_zoom(changed_tile, plane, current_zoom, new_zoom, tile_dir):
     original_x = changed_tile["x"]
     original_y = changed_tile["y"]
 
@@ -507,31 +510,31 @@ def join_changed_tile_to_new_zoom(changed_tile, plane, current_zoom, new_zoom):
 
     if side == Side.TOP_LEFT:
         tiles = [
-            load_generated_tile(plane, current_zoom, original_x, original_y),
-            load_generated_tile(plane, current_zoom, original_x + 1, original_y),
-            load_generated_tile(plane, current_zoom, original_x, original_y - 1),
-            load_generated_tile(plane, current_zoom, original_x + 1, original_y - 1)
+            load_generated_tile(plane, current_zoom, original_x, original_y, tile_dir),
+            load_generated_tile(plane, current_zoom, original_x + 1, original_y, tile_dir),
+            load_generated_tile(plane, current_zoom, original_x, original_y - 1, tile_dir),
+            load_generated_tile(plane, current_zoom, original_x + 1, original_y - 1, tile_dir)
         ]
     elif side == Side.TOP_RIGHT:
         tiles = [
-            load_generated_tile(plane, current_zoom, original_x - 1, original_y),
-            load_generated_tile(plane, current_zoom, original_x, original_y),
-            load_generated_tile(plane, current_zoom, original_x - 1, original_y - 1),
-            load_generated_tile(plane, current_zoom, original_x, original_y - 1)
+            load_generated_tile(plane, current_zoom, original_x - 1, original_y, tile_dir),
+            load_generated_tile(plane, current_zoom, original_x, original_y, tile_dir),
+            load_generated_tile(plane, current_zoom, original_x - 1, original_y - 1, tile_dir),
+            load_generated_tile(plane, current_zoom, original_x, original_y - 1, tile_dir)
         ]
     elif side == Side.BOTTOM_LEFT:
         tiles = [
-            load_generated_tile(plane, current_zoom, original_x, original_y + 1),
-            load_generated_tile(plane, current_zoom, original_x + 1, original_y + 1),
-            load_generated_tile(plane, current_zoom, original_x, original_y),
-            load_generated_tile(plane, current_zoom, original_x + 1, original_y)
+            load_generated_tile(plane, current_zoom, original_x, original_y + 1, tile_dir),
+            load_generated_tile(plane, current_zoom, original_x + 1, original_y + 1, tile_dir),
+            load_generated_tile(plane, current_zoom, original_x, original_y, tile_dir),
+            load_generated_tile(plane, current_zoom, original_x + 1, original_y, tile_dir)
         ]
     else:
         tiles = [
-            load_generated_tile(plane, current_zoom, original_x - 1, original_y + 1),
-            load_generated_tile(plane, current_zoom, original_x, original_y + 1),
-            load_generated_tile(plane, current_zoom, original_x - 1, original_y),
-            load_generated_tile(plane, current_zoom, original_x, original_y)
+            load_generated_tile(plane, current_zoom, original_x - 1, original_y + 1, tile_dir),
+            load_generated_tile(plane, current_zoom, original_x, original_y + 1, tile_dir),
+            load_generated_tile(plane, current_zoom, original_x - 1, original_y, tile_dir),
+            load_generated_tile(plane, current_zoom, original_x, original_y, tile_dir)
         ]
 
     new_tile_image = pyvips.Image.arrayjoin(tiles, across=2)
@@ -541,7 +544,7 @@ def join_changed_tile_to_new_zoom(changed_tile, plane, current_zoom, new_zoom):
     new_x = math.floor(original_x / 2)
     new_y = math.floor(original_y / 2)
 
-    save_tile(new_tile_image_resized, plane, new_zoom, new_x, new_y)
+    save_tile(new_tile_image_resized, plane, new_zoom, new_x, new_y, tile_dir)
 
     return {
         "x": new_x,
@@ -549,8 +552,9 @@ def join_changed_tile_to_new_zoom(changed_tile, plane, current_zoom, new_zoom):
         "image": new_tile_image_resized
     }
 
-def save_tile(tile_image, plane, zoom, x, y):
-    file_dir = Path(TILE_DIR, str(plane), str(zoom), str(x))
+
+def save_tile(tile_image, plane, zoom, x, y, tile_dir):
+    file_dir = Path(tile_dir, str(plane), str(zoom), str(x))
 
     file_dir.mkdir(parents=True, exist_ok=True)
 
@@ -559,14 +563,14 @@ def save_tile(tile_image, plane, zoom, x, y):
     tile_image.pngsave(str(file_path), compression=9)
 
 
-def load_generated_tile(plane, zoom, x, y):
+def load_generated_tile(plane, zoom, x, y, tile_dir):
     """
         Loads a tile image from the tile set stored in the repo
     """
-    if not generated_tile_exists(plane, zoom, x, y):
+    if not generated_tile_exists(plane, zoom, x, y, tile_dir):
         return DEFAULT_TILE_IMAGE
 
-    file_path = generated_tile_path(plane, zoom, x, y)
+    file_path = generated_tile_path(plane, zoom, x, y, tile_dir)
 
     image = pyvips.Image.new_from_file(str(file_path), access="sequential")
 
@@ -576,12 +580,12 @@ def load_generated_tile(plane, zoom, x, y):
     return image
 
 
-def generated_tile_exists(plane, zoom, x, y):
-    return os.path.isfile(generated_tile_path(plane, zoom, x, y))
+def generated_tile_exists(plane, zoom, x, y, tile_dir):
+    return os.path.isfile(generated_tile_path(plane, zoom, x, y, tile_dir))
 
 
-def generated_tile_path(plane, zoom, x, y):
-    return Path(TILE_DIR, str(plane), str(zoom), str(x), str(y) + ".png")
+def generated_tile_path(plane, zoom, x, y, tile_dir):
+    return Path(tile_dir, str(plane), str(zoom), str(x), str(y) + ".png")
 
 
 def output_tile_diff_image(changed_tiles, new_image_location, output_file_name):
