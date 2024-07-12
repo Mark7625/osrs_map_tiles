@@ -230,17 +230,25 @@ def download_and_extract_cache(cache_zip_url, output_dir):
     os.remove(cache_zip)
 
 
-def build_full_map_images(cache_dir, xtea_file,type_name):
+def build_full_map_images(cache_dir, xtea_file, type_name):
     """
-        Runs Runelite's MapImageDumper Java program to generate full OSRS map images
+    Runs Runelite's MapImageDumper Java program to generate full OSRS map images.
+
+    Parameters:
+    cache_dir (str): Path to the cache directory.
+    xtea_file (str): Path to the xtea file.
+    type_name (str): Type name to determine if object data should be included.
+
+    Returns:
+    None
     """
     LOG.info(f"Building map base images for {type_name}")
     os.chdir('/runelite/cache')
 
-    jar_file = glob.glob("target/*jar-with-dependencies.jar")[0]
-
-    subprocess.run(
-        [
+    try:
+        jar_file = glob.glob("target/*jar-with-dependencies.jar")[0]
+        
+        command = [
             'java', 
             '-Xmx8g', 
             '-cp', 
@@ -248,17 +256,23 @@ def build_full_map_images(cache_dir, xtea_file,type_name):
             'net.runelite.cache.MapImageDumper', 
             '--cachedir', cache_dir, 
             '--xteapath', xtea_file, 
-            '--outputdir', GENERATED_FULL_IMAGES,
-            '--withObjectData', 'true'
-            
-        ], 
-        check=True
-    )
+            '--outputdir', GENERATED_FULL_IMAGES
+        ]
 
-    for plane in range(MIN_Z, MAX_Z + 1):
-        new_map_image_path = os.path.join(GENERATED_FULL_IMAGES, f"${type_name}-img-{plane}.png")
-        renamed_new_map_image_path = os.path.join(GENERATED_FULL_IMAGES, f"new-map-image-{plane}.png")
-        os.replace(new_map_image_path, renamed_new_map_image_path)
+        if type_name == 'objects':
+            command.extend(['--withObjectData', 'true'])
+        else:
+            command.extend(['--withObjectData', 'false'])
+
+        subprocess.run(command, check=True)
+
+        for plane in range(MIN_Z, MAX_Z + 1):
+            new_map_image_path = os.path.join(GENERATED_FULL_IMAGES, f"{type_name}-img-{plane}.png")
+            renamed_new_map_image_path = os.path.join(GENERATED_FULL_IMAGES, f"new-map-image-{plane}.png")
+            os.replace(new_map_image_path, renamed_new_map_image_path)
+
+    except Exception as e:
+        LOG.error(f"An error occurred: {e}")
 
 
 def generate_tiles_for_plane(plane,type_name):
