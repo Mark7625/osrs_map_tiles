@@ -72,6 +72,8 @@ def main():
     [cache_dir, xtea_file] = download_cache_with_xteas()
 
     for type_name in TYPE_NAMES:
+        GENERATED_FULL_IMAGES = os.path.join(GENERATED_FULL_IMAGES_BASE, type_name)
+        TILE_DIR = os.path.join(REPO_DIR, type_name)
         type_name_clean = type_name.rstrip('/')
         LOG.info(f"Building map base images: {type_name_clean}")
         build_full_map_images(cache_dir, xtea_file)
@@ -87,8 +89,8 @@ def main():
 
             os.replace(current_map_image_name, previous_map_image_name)
             os.replace(generated_file_name, current_map_image_name)
-       
 
+      
 def download_cache_with_xteas():
     """
         Downloads latest cache and XTEAs from specified URL.
