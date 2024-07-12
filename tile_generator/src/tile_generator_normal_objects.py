@@ -44,7 +44,6 @@ MAX_Z = 3
 REPO_DIR = '/repo' # Name of the directory mounted on the local machine
 ROOT_CACHE_DIR = os.path.join(REPO_DIR, 'cache/')
 GENERATED_FULL_IMAGES_BASE = os.path.join(REPO_DIR, 'generated_images/')
-GENERATED_FULL_IMAGES = os.path.join(GENERATED_FULL_IMAGES_BASE, 'objects/')
 TILE_DIR = os.path.join(REPO_DIR, 'objects/')
 
 image_prefix = "full_image_"
@@ -79,9 +78,9 @@ def main():
         generate_tiles_for_plane(plane)
 
     for plane in range(MIN_Z, MAX_Z + 1):
-        previous_map_image_name = os.path.join(GENERATED_FULL_IMAGES, f"previous-map-image-{plane}.png")
-        current_map_image_name = os.path.join(GENERATED_FULL_IMAGES, f"current-map-image-{plane}.png")
-        generated_file_name = os.path.join(GENERATED_FULL_IMAGES, f"new-map-image-{plane}.png")
+        previous_map_image_name = os.path.join(GENERATED_FULL_IMAGES, f"previous-map-image-object-{plane}.png")
+        current_map_image_name = os.path.join(GENERATED_FULL_IMAGES, f"current-map-image-object-{plane}.png")
+        generated_file_name = os.path.join(GENERATED_FULL_IMAGES, f"new-map-image-object-{plane}.png")
 
         os.replace(current_map_image_name, previous_map_image_name)
         os.replace(generated_file_name, current_map_image_name)
@@ -246,8 +245,8 @@ def build_full_map_images(cache_dir, xtea_file):
     )
 
     for plane in range(MIN_Z, MAX_Z + 1):
-        new_map_image_path = os.path.join(GENERATED_FULL_IMAGES, f"img-{plane}.png")
-        renamed_new_map_image_path = os.path.join(GENERATED_FULL_IMAGES, f"new-map-image-{plane}.png")
+        new_map_image_path = os.path.join(GENERATED_FULL_IMAGES, f"objectdata-img-{plane}.png")
+        renamed_new_map_image_path = os.path.join(GENERATED_FULL_IMAGES, f"new-map-image-object-{plane}.png")
         os.replace(new_map_image_path, renamed_new_map_image_path)
 
 
@@ -275,7 +274,7 @@ def generate_tiles_for_plane(plane):
     LOG.info(f"{log_prefix} Loading images into memory")
 
     old_image_location = os.path.join(GENERATED_FULL_IMAGES, f"current-map-image-{plane}.png")
-    new_image_location = os.path.join(GENERATED_FULL_IMAGES, f"new-map-image-{plane}.png")
+    new_image_location = os.path.join(GENERATED_FULL_IMAGES, f"new-map-image-object-{plane}.png")
 
     old_image = pyvips.Image.new_from_file(old_image_location)
     new_image = pyvips.Image.new_from_file(new_image_location)
