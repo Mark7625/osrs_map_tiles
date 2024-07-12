@@ -327,7 +327,7 @@ def generate_tiles_for_plane(plane, type_name_clean, generated_full_images, tile
 
     for zoom in reversed(range(MIN_ZOOM + 1, starting_zoom + 1)):
         LOG.info(f"{log_prefix} Joining changed tiles from zoom level {zoom} to zoom level {zoom - 1}")
-        changed_tiles = join_tiles_to_new_zoom(changed_tiles, plane, zoom, zoom - 1)
+        changed_tiles = join_tiles_to_new_zoom(changed_tiles, plane, zoom, zoom - 1, tile_dir)
         LOG.info(f"{log_prefix} Done")
 
 
@@ -473,7 +473,7 @@ def split_tile_to_new_zoom(changed_tile, plane, new_zoom, tile_dir):
     ]
 
 
-def join_tiles_to_new_zoom(changed_tiles, plane, current_zoom, new_zoom):
+def join_tiles_to_new_zoom(changed_tiles, plane, current_zoom, new_zoom,tile_dir):
     new_changed_tiles = []
 
     with thread_pool_executor() as executor:
@@ -486,7 +486,8 @@ def join_tiles_to_new_zoom(changed_tiles, plane, current_zoom, new_zoom):
                     changed_tile=changed_tile,
                     plane=plane,
                     current_zoom=current_zoom,
-                    new_zoom=new_zoom
+                    new_zoom=new_zoom,
+                    tile_dir=tile_dir
                 )
             )
 
