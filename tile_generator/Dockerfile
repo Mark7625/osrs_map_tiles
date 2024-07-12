@@ -27,7 +27,7 @@ RUN conda install -c conda-forge openjdk=11
 RUN conda install -c conda-forge maven
 
 # Clone runelite repo
-RUN git clone --117map https://github.com/Mark7625/runelite.git /runelite
+RUN git clone --branch 117map https://github.com/Mark7625/runelite.git /runelite
 # Install runelite
 RUN mvn -f /runelite/pom.xml install -DskipTests
 
