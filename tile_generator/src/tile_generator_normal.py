@@ -42,9 +42,11 @@ MIN_Z = 0
 MAX_Z = 3
 
 REPO_DIR = '/repo' # Name of the directory mounted on the local machine
+TYPE_NAME = 'normal/'
 ROOT_CACHE_DIR = os.path.join(REPO_DIR, 'cache/')
-GENERATED_FULL_IMAGES = os.path.join(REPO_DIR, 'generated_images/')
-TILE_DIR = os.path.join(REPO_DIR, 'normal/')
+GENERATED_FULL_IMAGES_BASE = os.path.join(REPO_DIR, 'generated_images/')
+GENERATED_FULL_IMAGES = os.path.join(GENERATED_FULL_IMAGES_BASE, TYPE_NAME)
+TILE_DIR = os.path.join(REPO_DIR, TYPE_NAME)
 
 image_prefix = "full_image_"
 
@@ -238,7 +240,7 @@ def build_full_map_images(cache_dir, xtea_file):
             '--cachedir', cache_dir, 
             '--xteapath', xtea_file, 
             '--outputdir', GENERATED_FULL_IMAGES,
-            '--withObjectData', 'false'
+            '--withObjectData', 'true'
             
         ], 
         check=True
