@@ -83,9 +83,9 @@ def main():
             generate_tiles_for_plane(plane, type_name_clean, generated_full_images, tile_dir)
 
         for plane in range(MIN_Z, MAX_Z + 1):
-            previous_map_image_name = os.path.join(GENERATED_FULL_IMAGES, f"previous-map-image-{plane}.png")
-            current_map_image_name = os.path.join(GENERATED_FULL_IMAGES, f"current-map-image-{plane}.png")
-            generated_file_name = os.path.join(GENERATED_FULL_IMAGES, f"new-map-image-{plane}.png")
+            previous_map_image_name = os.path.join(generated_full_images, f"previous-map-image-{plane}.png")
+            current_map_image_name = os.path.join(generated_full_images, f"current-map-image-{plane}.png")
+            generated_file_name = os.path.join(generated_full_images, f"new-map-image-{plane}.png")
 
             os.replace(current_map_image_name, previous_map_image_name)
             os.replace(generated_file_name, current_map_image_name)
