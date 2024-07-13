@@ -75,7 +75,7 @@ def main():
         tile_dir = os.path.join(REPO_DIR, type_name)
 
         type_name_clean = type_name.rstrip('/')
-
+        LOG.info(f"Building map base images: {type_name_clean}")
         build_full_map_images(cache_dir, xtea_file, type_name_clean, generated_full_images)
 
         LOG.info(f"Generating tiles: {type_name_clean}")
@@ -323,7 +323,7 @@ def generate_tiles_for_plane(plane, type_name_clean, generated_full_images, tile
 
     for zoom in reversed(range(MIN_ZOOM + 1, starting_zoom + 1)):
         LOG.info(f"{log_prefix} Joining changed tiles from zoom level {zoom} to zoom level {zoom - 1}")
-        changed_tiles = join_tiles_to_new_zoom(changed_tiles, plane, zoom, zoom - 1, tile_dir)
+        changed_tiles = join_tiles_to_new_zoom(changed_tiles, plane, zoom, zoom - 1,tile_dir)
         LOG.info(f"{log_prefix} Done")
 
 
@@ -347,8 +347,7 @@ def get_changed_tiles(old_image, new_image, plane, zoom):
                         tile_x=tile_x,
                         tile_y=tile_y,
                         old_image=old_image,
-                        new_image=new_image,
-
+                        new_image=new_image
                     )
                 )
 
