@@ -260,7 +260,7 @@ def build_full_map_images(cache_dir, xtea_file, type_name_clean, generated_full_
         )
 
         for plane in range(MIN_Z, MAX_Z + 1):
-            new_map_image_path = os.path.join(generated_full_images, f"img-{plane}.png")
+            new_map_image_path = os.path.join(generated_full_images, f"{type_name_clean}-img-{plane}.png")
             renamed_new_map_image_path = os.path.join(generated_full_images, f"new-map-image-{plane}.png")
             os.replace(new_map_image_path, renamed_new_map_image_path)
 
