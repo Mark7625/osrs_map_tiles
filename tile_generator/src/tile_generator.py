@@ -238,7 +238,8 @@ def build_full_map_images(cache_dir, xtea_file):
             '--cachedir', cache_dir, 
             '--xteapath', xtea_file, 
             '--outputdir', GENERATED_FULL_IMAGES,
-            '--dumptype', 'normal'
+            '--dumptype', 'normal',
+            '--locationdir', REPO_DIR
         ], 
         check=True
     )
