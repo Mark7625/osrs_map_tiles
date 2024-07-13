@@ -43,8 +43,8 @@ MAX_Z = 3
 
 REPO_DIR = '/repo' # Name of the directory mounted on the local machine
 ROOT_CACHE_DIR = os.path.join(REPO_DIR, 'cache/')
-GENERATED_FULL_IMAGES = os.path.join(REPO_DIR, 'generated_images/')
-TILE_DIR = REPO_DIR
+GENERATED_FULL_IMAGES = os.path.join(REPO_DIR, 'generated_images/normal/')
+TILE_DIR = os.path.join(REPO_DIR, 'normal/')
 
 image_prefix = "full_image_"
 
