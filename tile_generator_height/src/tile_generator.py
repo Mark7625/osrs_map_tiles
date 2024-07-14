@@ -43,8 +43,8 @@ MAX_Z = 3
 
 REPO_DIR = '/repo' # Name of the directory mounted on the local machine
 ROOT_CACHE_DIR = os.path.join(REPO_DIR, 'cache/')
-GENERATED_FULL_IMAGES = os.path.join(REPO_DIR, 'generated_images/normal/')
-TILE_DIR = os.path.join(REPO_DIR, 'normal/')
+GENERATED_FULL_IMAGES = os.path.join(REPO_DIR, 'generated_images/height/')
+TILE_DIR = os.path.join(REPO_DIR, 'height/')
 
 image_prefix = "full_image_"
 
@@ -234,7 +234,7 @@ def build_full_map_images(cache_dir, xtea_file):
             '-Xmx8g', 
             '-cp', 
             jar_file,
-            'net.runelite.cache.MapImageDumper', 
+            'net.runelite.cache.HeightMapDumper', 
             '--cachedir', cache_dir, 
             '--xteapath', xtea_file, 
             '--outputdir', GENERATED_FULL_IMAGES,
