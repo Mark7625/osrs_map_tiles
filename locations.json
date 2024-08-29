@@ -1,60 +1,6 @@
 {
   "locations": [
     {
-      "name": "Callisto\u0027s Den",
-      "coords": [
-        3293,
-        3847,
-        0
-      ],
-      "size": "default"
-    },
-    {
-      "name": "Silk Chasm",
-      "coords": [
-        3321,
-        3796,
-        0
-      ],
-      "size": "default"
-    },
-    {
-      "name": "Vet\u0027ion\u0027s Rest",
-      "coords": [
-        3223,
-        3786,
-        0
-      ],
-      "size": "default"
-    },
-    {
-      "name": "Hunter\u0027s End",
-      "coords": [
-        3116,
-        3672,
-        0
-      ],
-      "size": "default"
-    },
-    {
-      "name": "Web Chasm",
-      "coords": [
-        3183,
-        3740,
-        0
-      ],
-      "size": "default"
-    },
-    {
-      "name": "Skeletal Tomb",
-      "coords": [
-        3179,
-        3679,
-        0
-      ],
-      "size": "default"
-    },
-    {
       "name": "Lumbridge",
       "coords": [
         3239,
@@ -3214,6 +3160,60 @@
       "size": "default"
     },
     {
+      "name": "Callisto\u0027s Den",
+      "coords": [
+        3293,
+        3847,
+        0
+      ],
+      "size": "default"
+    },
+    {
+      "name": "Silk Chasm",
+      "coords": [
+        3321,
+        3796,
+        0
+      ],
+      "size": "default"
+    },
+    {
+      "name": "Vet\u0027ion\u0027s Rest",
+      "coords": [
+        3223,
+        3786,
+        0
+      ],
+      "size": "default"
+    },
+    {
+      "name": "Hunter\u0027s End",
+      "coords": [
+        3116,
+        3672,
+        0
+      ],
+      "size": "default"
+    },
+    {
+      "name": "Web Chasm",
+      "coords": [
+        3183,
+        3740,
+        0
+      ],
+      "size": "default"
+    },
+    {
+      "name": "Skeletal Tomb",
+      "coords": [
+        3179,
+        3679,
+        0
+      ],
+      "size": "default"
+    },
+    {
       "name": "Lower level",
       "coords": [
         1743,
@@ -4198,7 +4198,7 @@
       "name": "Ectofuntus",
       "coords": [
         3680,
-        9884,
+        9888,
         0
       ],
       "size": "default"
@@ -4207,7 +4207,7 @@
       "name": "Brewery",
       "coords": [
         3680,
-        9956,
+        9960,
         0
       ],
       "size": "default"
@@ -4262,6 +4262,15 @@
       "coords": [
         3667,
         9824,
+        0
+      ],
+      "size": "default"
+    },
+    {
+      "name": "Araxxor",
+      "coords": [
+        3632,
+        9815,
         0
       ],
       "size": "default"
