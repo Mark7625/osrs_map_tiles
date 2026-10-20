@@ -1,96 +1,111 @@
-"""
-Tile generator for creating tile sets for OSRS maps to be used with map viewers such as leaflet.
-"""
+    is_bottom = original_y % 2 == 0
 
-import glob
-import json
-import logging
-import math
-import os
-import re
-import shutil
-import subprocess
-import zipfile
-from datetime import datetime
-from enum import Enum
-from multiprocessing import Pool
-from pathlib import Path
+    if is_left:
+        side = Side.BOTTOM_LEFT if is_bottom else Side.TOP_LEFT
+    else:
+        side = Side.BOTTOM_RIGHT if is_bottom else Side.TOP_RIGHT
 
-from contextlib import contextmanager
-from concurrent.futures import ThreadPoolExecutor, as_completed, thread
-import concurrent.futures
-import numpy as np
-import pyvips
-import requests
-from bs4 import BeautifulSoup
-from PIL import Image, ImageDraw
-from skimage.metrics import structural_similarity
+    if side == Side.TOP_LEFT:
+        tiles = [
+            load_generated_tile(plane, current_zoom, original_x, original_y),
+            load_generated_tile(plane, current_zoom, original_x + 1, original_y),
+            load_generated_tile(plane, current_zoom, original_x, original_y - 1),
+            load_generated_tile(plane, current_zoom, original_x + 1, original_y - 1)
+        ]
+    elif side == Side.TOP_RIGHT:
+        tiles = [
+            load_generated_tile(plane, current_zoom, original_x - 1, original_y),
+            load_generated_tile(plane, current_zoom, original_x, original_y),
+            load_generated_tile(plane, current_zoom, original_x - 1, original_y - 1),
+            load_generated_tile(plane, current_zoom, original_x, original_y - 1)
+        ]
+    elif side == Side.BOTTOM_LEFT:
+        tiles = [
+            load_generated_tile(plane, current_zoom, original_x, original_y + 1),
+            load_generated_tile(plane, current_zoom, original_x + 1, original_y + 1),
+            load_generated_tile(plane, current_zoom, original_x, original_y),
+            load_generated_tile(plane, current_zoom, original_x + 1, original_y)
+        ]
+    else:
+        tiles = [
+            load_generated_tile(plane, current_zoom, original_x - 1, original_y + 1),
+            load_generated_tile(plane, current_zoom, original_x, original_y + 1),
+            load_generated_tile(plane, current_zoom, original_x - 1, original_y),
+            load_generated_tile(plane, current_zoom, original_x, original_y)
+        ]
 
-CACHES_BASE_URL = "https://archive.openrs2.org"
-CACHE_ID = 2746
-CACHE_URL = f"{CACHES_BASE_URL}/caches/runescape/{CACHE_ID}/disk.zip"
-XTEA_URL = f"{CACHES_BASE_URL}/caches/runescape/{CACHE_ID}/keys.json"
+    new_tile_image = pyvips.Image.arrayjoin(tiles, across=2)
 
-LOG = logging.getLogger(__name__)
-LOG.setLevel(logging.INFO)
+    new_tile_image_resized = new_tile_image.resize(0.5, kernel='lanczos3')
 
-Image.MAX_IMAGE_PIXELS = 1000000000000000
+    new_x = math.floor(original_x / 2)
+    new_y = math.floor(original_y / 2)
 
-TILE_SIZE_PX = 256
+    save_tile(new_tile_image_resized, plane, new_zoom, new_x, new_y)
 
-MIN_ZOOM = 3
-MAX_ZOOM = 11
+    return {
+        "x": new_x,
+        "y": new_y,
+        "image": new_tile_image_resized
+    }
 
-MIN_Z = 0
-MAX_Z = 3
+def save_tile(tile_image, plane, zoom, x, y):
+    file_dir = Path(TILE_DIR, str(plane), str(zoom), str(x))
 
-REPO_DIR = '/repo' # Name of the directory mounted on the local machine
-ROOT_CACHE_DIR = os.path.join(REPO_DIR, 'cache/')
-GENERATED_FULL_IMAGES = os.path.join(REPO_DIR, 'generated_images/')
-TILE_DIR = REPO_DIR
+    file_dir.mkdir(parents=True, exist_ok=True)
 
-image_prefix = "full_image_"
+    file_path = Path(file_dir, str(y) + ".png")
 
-logging.basicConfig(
-    format='%(asctime)s %(levelname)-4s %(message)s',
-    level=logging.WARNING,
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-
-DEFAULT_TILE_IMAGE = (
-    pyvips.Image.black(TILE_SIZE_PX, TILE_SIZE_PX, bands=4)
-    .draw_rect([0, 0, 0, 0], 0, 0, TILE_SIZE_PX, TILE_SIZE_PX, fill=True)
-)
-
-class Side(Enum):
-    TOP_LEFT = 1
-    TOP_RIGHT = 2
-    BOTTOM_LEFT = 3
-    BOTTOM_RIGHT = 4
+    tile_image.pngsave(str(file_path), compression=9)
 
 
-def main():
-    LOG.info("Downloading cache & XTEAs")
-    [cache_dir, xtea_file] = download_cache_with_xteas()
+def load_generated_tile(plane, zoom, x, y):
+    """
+        Loads a tile image from the tile set stored in the repo
+    """
+    if not generated_tile_exists(plane, zoom, x, y):
+        return DEFAULT_TILE_IMAGE
 
-    LOG.info("Building map base images")
-    build_full_map_images(cache_dir, xtea_file)
+    file_path = generated_tile_path(plane, zoom, x, y)
 
-    LOG.info("Generating tiles")
-    for plane in range(MAX_Z + 1):
-        generate_tiles_for_plane(plane)
+    image = pyvips.Image.new_from_file(str(file_path), access="sequential")
 
-    for plane in range(MIN_Z, MAX_Z + 1):
-        previous_map_image_name = os.path.join(GENERATED_FULL_IMAGES, f"previous-map-image-{plane}.png")
-        current_map_image_name = os.path.join(GENERATED_FULL_IMAGES, f"current-map-image-{plane}.png")
-        generated_file_name = os.path.join(GENERATED_FULL_IMAGES, f"new-map-image-{plane}.png")
+    if not image.hasalpha():
+        image = image.addalpha()
 
-        if os.path.isfile(current_map_image_name):
-            os.replace(current_map_image_name, previous_map_image_name)
-        os.replace(generated_file_name, current_map_image_name)
-       
+    return image
 
-def download_cache_with_xteas():
-    """Download the fixed OpenRS2 cache and its XTEA keys."""
-    cache_dir = os.path.join(ROOT_CACHE_DIR, str(CACHE_ID))
-    xtea_file = os.path.join(cache_dir, "xteas.json")
+
+def generated_tile_exists(plane, zoom, x, y):
+    return os.path.isfile(generated_tile_path(plane, zoom, x, y))
+
+
+def generated_tile_path(plane, zoom, x, y):
+    return Path(TILE_DIR, str(plane), str(zoom), str(x), str(y) + ".png")
+
+
+def output_tile_diff_image(changed_tiles, new_image_location, output_file_name):
+    diff_image = im = Image.open(new_image_location)
+
+    draw = ImageDraw.Draw(im)
+
+    for tile in changed_tiles:
+        shape = [(tile["pixel_x"], tile["pixel_y"]), (tile["pixel_x"] + TILE_SIZE_PX, tile["pixel_y"] + TILE_SIZE_PX)]
+        draw.rectangle(shape, fill=None, outline="red", width=3)
+
+    diff_image.save(output_file_name)
+
+
+@contextmanager
+def thread_pool_executor():
+    with ThreadPoolExecutor() as executor:
+        try:
+            yield executor
+        except KeyboardInterrupt:
+            LOG.warning("Performing non-graceful shutdown of threads")
+            executor._threads.clear()
+            concurrent.futures.thread._threads_queues.clear()
+
+
+if __name__ == '__main__':
+    main()
